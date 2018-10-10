@@ -43,14 +43,14 @@ cteGestStartDates (PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY, DATE_RANK)
 	select PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY, 2 as DATE_RANK
 	from
 	(
-		select e.PERSON_ID, e.EVENT_ID as EVENT_ID, dateadd(d,(-1 * p.gest_value) + 1, p.EVENT_DATE) as EPISODE_START_DATE, p.Category,
+		select e.PERSON_ID, e.EVENT_ID as EVENT_ID, dateadd(d,(-1 * cast(p.gest_value as int)) + 1, p.EVENT_DATE) as EPISODE_START_DATE, p.Category,
 			row_number() over (partition by e.person_id, e.event_id order by p.EVENT_DATE desc) as rn
 		from cteOutcomeEvents e
 		JOIN @resultsDatabaseSchema.term_durations lb on e.Category = lb.CATEGORY
 		JOIN ctePriorOutcomeDates pod on pod.person_id = e.person_id and pod.EVENT_ID = e.EVENT_ID
 		JOIN #pregnancy_events p on e.PERSON_ID = p.PERSON_ID
-		where p.CATEGORY = 'GEST'
-			and dateadd(d,(-1 * p.gest_value) + 1, p.EVENT_DATE) between
+		where p.CATEGORY = 'GEST' and p.gest_value is not null
+			and dateadd(d,(-1 * cast(p.gest_value as int)) + 1, p.EVENT_DATE) between
 				case when dateadd(d, lb.retry , pod.PRIOR_OUTCOME_DATE) > dateadd(d, -1* lb.MAX_TERM, e.EVENT_DATE) then dateadd(d, lb.retry , pod.PRIOR_OUTCOME_DATE)
 				else dateadd(d, -1* lb.MAX_TERM, e.EVENT_DATE) end
 				and dateadd(d, -1* lb.MIN_TERM, e.EVENT_DATE)
